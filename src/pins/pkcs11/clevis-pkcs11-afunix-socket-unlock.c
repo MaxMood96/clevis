@@ -70,21 +70,23 @@ get_control_socket_name(const char* file_sock, char* control_sock, uint32_t cont
 }
 
 static void insert_device(const char* dev) {
+    pthread_mutex_lock(&mutex);
     if(MAX_ENTRIES == entry_counter) {
+        pthread_mutex_unlock(&mutex);
         perror("No more entries accepted\n");
         return;
     }
-    pthread_mutex_lock(&mutex);
     strncpy(keys[entry_counter].dev, dev, MAX_DEVICE);
     pthread_mutex_unlock(&mutex);
 }
 
 static void insert_key(const char* key) {
+    pthread_mutex_lock(&mutex);
     if(MAX_ENTRIES == entry_counter) {
+        pthread_mutex_unlock(&mutex);
         perror("No more entries accepted\n");
         return;
     }
-    pthread_mutex_lock(&mutex);
     strncpy(keys[entry_counter++].key, key, MAX_KEY);
     pthread_mutex_unlock(&mutex);
 }
@@ -146,7 +148,6 @@ static void* control_thread(void *targ) {
         }
         char* t = control_msg;
         int is_device = 1;
-        fprintf(logfile, "Received control message:[%s]\n", t);
         while((t = strtok(t, ","))) {
             if (is_device) {
                 fprintf(logfile, "Adding device:%s\n", t);
@@ -185,7 +186,7 @@ static void dump_wide_version(void) {
 
 static void int_handler(int s) {
     if(logfile) {
-        fprintf(logfile, "Closing, signal:[%d]\n", s);
+        fprintf(logfile, "Closing, received signal:[%d]\n", s);
         fclose(logfile);
     }
     exit(EXIT_FAILURE);
@@ -222,6 +223,7 @@ int main(int argc, char* argv[]) {
             break;
         case 'f':
             strncpy(sock_file, optarg, MAX_PATH - 1);
+            unlink(sock_file);
             break;
         case 'k':
             strncpy(key, optarg, MAX_KEY - 1);
@@ -275,7 +277,6 @@ int main(int argc, char* argv[]) {
     memset(&sock_addr, 0, sizeof(sock_addr));
     sock_addr.sun_family = AF_UNIX;
     strncpy(sock_addr.sun_path, sock_file, sizeof(sock_addr.sun_path)-1);
-    unlink(sock_file);
     s = socket(AF_UNIX, SOCK_STREAM, 0);
     if (s == -1) {
         perror("socket");
@@ -346,8 +347,8 @@ int main(int argc, char* argv[]) {
                     perror("key entry send error");
                     goto efailure;
                 }
-                fprintf(logfile, "Sending:[%s] to device:[%s]\n",
-                        entry_key, unlocking_device);
+                fprintf(logfile, "Sending passphrase to device:[%s]\n",
+                        unlocking_device);
             } else {
                 fprintf(logfile, "Device not found: [%s]\n", unlocking_device);
             }

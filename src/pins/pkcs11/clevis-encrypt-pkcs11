@@ -99,7 +99,16 @@ fi
 PKEY="${CLEVIS_PKCS11}/pubkey"
 if ! id=$(pkcs11-tool ${slot_opt} -O 2>${ERR} ${module_opt} \
           | grep -i 'Public' -A10 2>${ERR} | grep 'ID:' \
-	  | head -1 | awk -F 'ID:' '{print $2}' | tr -d ' '); then
+	  | head -1 | awk -F 'ID:' '{
+	    val = $2
+	    if (match(val, /\(0x[^)]+\)/)) {
+	        val = substr(val, RSTART+3, RLENGTH-4)
+	        print val
+	    } else {
+	        gsub(/^[[:space:]]+|[[:space:]]+$/, "", val)
+	        print val
+	    }
+	}'); then
     cat "${ERR}" >&2
     echo "Unable to obtain public key ID from PKCS#11 device" >&2
     exit 1

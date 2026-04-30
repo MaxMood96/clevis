@@ -1,0 +1,27 @@
+jobs:
+  - &tests-ci-base
+    job: tests
+    trigger: pull_request
+    branch: master
+    skip_build: true
+    fmf_url: "https://github.com/RedHat-SP-Security/clevis-tests"
+    fmf_ref: "master"
+    targets:
+      - fedora-stable
+      - centos-stream-10-x86_64
+      - centos-stream-9-x86_64
+    identifier: "sanity"
+    tmt_plan: "/Plans/upstream/sanity"
+    tf_extra_params:
+      environment:
+        tmt:
+          context:
+            target_PR_branch: master
+
+  - <<: *tests-ci-base
+    targets:
+      - centos-stream-9-x86_64
+      - centos-stream-10-x86_64
+    identifier: "pkcs11"
+    tmt_plan: "/Plans/upstream/pkcs11-.*"
+    use_internal_tf: True

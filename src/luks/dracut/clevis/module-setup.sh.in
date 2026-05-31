@@ -52,6 +52,7 @@ install() {
         inst_script "$moddir"/clevis-password-unlocker-prepare /bin/clevis-password-unlocker-prepare
         inst_multiple \
             clevis-luks-unlock \
+            chmod \
             blkid
     fi
 

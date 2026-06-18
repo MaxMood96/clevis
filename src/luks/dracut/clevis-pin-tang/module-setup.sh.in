@@ -37,6 +37,16 @@ have_tang_bindings() {
 install() {
     if [ "${hostonly_cmdline}" = "yes" ] && have_tang_bindings; then
         echo "rd.neednet=1" > "${initdir}/etc/cmdline.d/99clevis-pin-tang.conf"
+
+        if dracut_module_included "systemd"; then
+            # shellcheck disable=SC2154 # $systemdsystemunitdir is a dracut variable
+            mkdir -p "${initdir}/${systemdsystemunitdir}/clevis-luks-askpass.path.d"
+            cat > "${initdir}/${systemdsystemunitdir}/clevis-luks-askpass.path.d/network-online.conf" <<EOF
+[Unit]
+After=network-online.target
+Wants=network-online.target
+EOF
+        fi
     fi
 
     inst_multiple \
